@@ -1,7 +1,6 @@
 package gpscount
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/stratoberry/go-gpsd"
@@ -11,11 +10,11 @@ import (
 )
 
 type GPSCount struct {
-	Url	string
+	Url string
 
-	done	chan bool
-	gps	*gpsd.Session
-	wg	sync.WaitGroup
+	done chan bool
+	gps  *gpsd.Session
+	wg   sync.WaitGroup
 }
 
 var sampleConfig = `
@@ -46,28 +45,28 @@ func (g *GPSCount) Start(acc telegraf.Accumulator) error {
 	skyfilter := func(r interface{}) {
 		var used, visible int
 
-	        sky := r.(*gpsd.SKYReport)
-	        for _, sat := range sky.Satellites {
-	                if sat.Used {
-	                        used++
-	                }
-	        }
-	        visible = len(sky.Satellites)
+		sky := r.(*gpsd.SKYReport)
+		for _, sat := range sky.Satellites {
+			if sat.Used {
+				used++
+			}
+		}
+		visible = len(sky.Satellites)
 
 		fields := map[string]interface{}{
-			"visible":	visible,
-			"used":		used,
+			"visible": visible,
+			"used":    used,
 		}
 		acc.AddCounter("gpscount", fields, nil)
 	}
 
 	g.gps.AddFilter("SKY", skyfilter)
-		
+
 	g.wg.Add(1)
 	go func() {
 		defer g.wg.Done()
-        	g.done = g.gps.Watch()
-		<- g.done
+		g.done = g.gps.Watch()
+		<-g.done
 	}()
 
 	return nil
